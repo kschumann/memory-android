@@ -21,8 +21,35 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Release signing reads from Gradle properties (set in ~/.gradle/gradle.properties, never
+    // committed) rather than being hardcoded. If any property is missing - e.g. on a fresh clone
+    // that doesn't have Karl's local gradle.properties - hasReleaseSigning is false, no signing
+    // config is created, and the release build type just builds unsigned instead of failing.
+    val releaseStoreFile = providers.gradleProperty("MEMORY_STORE_FILE")
+    val releaseStorePassword = providers.gradleProperty("MEMORY_STORE_PASSWORD")
+    val releaseKeyAlias = providers.gradleProperty("MEMORY_KEY_ALIAS")
+    val releaseKeyPassword = providers.gradleProperty("MEMORY_KEY_PASSWORD")
+    val hasReleaseSigning = releaseStoreFile.isPresent &&
+        releaseStorePassword.isPresent &&
+        releaseKeyAlias.isPresent &&
+        releaseKeyPassword.isPresent
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseStoreFile.get())
+                storePassword = releaseStorePassword.get()
+                keyAlias = releaseKeyAlias.get()
+                keyPassword = releaseKeyPassword.get()
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             optimization {
                 enable = false
             }

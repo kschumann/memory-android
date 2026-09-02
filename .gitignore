@@ -14,4 +14,10 @@
 /captures
 .externalNativeBuild
 .cxx
+
+# Release signing material - never committed
+*.jks
+*.keystore
+keys/
+gradle.properties
 local.properties
