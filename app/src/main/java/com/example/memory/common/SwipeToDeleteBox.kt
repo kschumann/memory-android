@@ -28,12 +28,6 @@ fun SwipeToDeleteBox(
     content: @Composable () -> Unit
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value != SwipeToDismissBoxValue.Settled) {
-                onDelete()
-            }
-            true
-        },
         positionalThreshold = { distance -> distance * 0.4f }
     )
 
@@ -44,6 +38,7 @@ fun SwipeToDeleteBox(
     SwipeToDismissBox(
         state = dismissState,
         modifier = modifier,
+        onDismiss = { onDelete() },
         backgroundContent = {
             Box(
                 modifier = Modifier

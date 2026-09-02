@@ -62,6 +62,27 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // MigrationTestHelper reads exported schema JSON as an asset at test runtime, so the
+    // schemas/ directory (see the `room` block below) has to be on the androidTest assets path.
+    sourceSets {
+        getByName("androidTest") {
+            assets.srcDirs("$projectDir/schemas")
+        }
+    }
+}
+
+// The Room Gradle plugin (id 'androidx.room') registers a copy task but never actually wires
+// room.schemaLocation into the kspDebugKotlin/kspReleaseKotlin tasks on this project's AGP 9
+// setup - the task runs NO-SOURCE and no schema JSON is produced. So the location is passed
+// straight to KSP instead, via a CommandLineArgumentProvider (see RoomSchemaArgProvider below)
+// rather than a plain `ksp { arg("room.schemaLocation", "$projectDir/schemas") }` string. A bare
+// string bakes the absolute $projectDir path into the task's inputs verbatim, which isn't a
+// recognized/cacheable Gradle input and breaks the build cache and incremental builds. The
+// provider instead declares the schema directory as a proper @InputDirectory with RELATIVE path
+// sensitivity, so Gradle can hash its contents and cache correctly across machines/checkouts.
+ksp {
+    arg(RoomSchemaArgProvider(File(projectDir, "schemas")))
 }
 
 dependencies {
@@ -87,6 +108,23 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.room.testing)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+}
+
+// room.schemaLocation as a proper Gradle task input (see the ksp{} block above) instead of a
+// bare string baked into the command line.
+class RoomSchemaArgProvider(
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    val schemaDir: File,
+) : CommandLineArgumentProvider {
+    init {
+        // Must exist before Gradle snapshots it as an input - true on the very first export,
+        // since nothing has ever written to schemas/ yet.
+        schemaDir.mkdirs()
+    }
+
+    override fun asArguments(): Iterable<String> = listOf("room.schemaLocation=${schemaDir.path}")
 }
