@@ -6,7 +6,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -43,7 +42,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.memory.MemoryApp
-import com.example.memory.common.AppIconHeader
+import com.example.memory.common.ScreenTopBar
 import com.example.memory.common.SwipeToDeleteBox
 import com.example.memory.data.ListEntity
 import kotlinx.coroutines.launch
@@ -116,8 +115,7 @@ fun HomeScreen(onOpenList: (Long) -> Unit) {
 
     Scaffold(
         topBar = {
-            Column {
-                AppIconHeader()
+            ScreenTopBar {
                 TopAppBar(
                     title = { Text("My Memory") },
                     actions = {

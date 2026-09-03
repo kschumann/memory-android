@@ -3,7 +3,6 @@ package com.example.memory.ui.listdetail
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -53,7 +52,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.memory.MemoryApp
-import com.example.memory.common.AppIconHeader
+import com.example.memory.common.ScreenTopBar
 import com.example.memory.common.SwipeToDeleteBox
 import com.example.memory.data.LIST_NAME_MAX_LENGTH
 import sh.calvin.reorderable.ReorderableItem
@@ -94,8 +93,7 @@ fun ListDetailScreen(listId: Long, onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-          Column {
-            AppIconHeader()
+          ScreenTopBar {
             CenterAlignedTopAppBar(
                 title = {
                     val currentList = list
