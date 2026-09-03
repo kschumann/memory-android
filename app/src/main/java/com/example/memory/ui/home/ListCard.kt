@@ -1,7 +1,6 @@
 package com.example.memory.ui.home
 
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -84,17 +83,16 @@ fun ListCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .combinedClickable(onClick = onOpen, onLongClick = onStartRename)
-                    .padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(start = 4.dp, top = 16.dp, bottom = 16.dp, end = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = list.name.ifBlank { "Untitled" }, modifier = Modifier.weight(1f))
                 Icon(
                     imageVector = Icons.Filled.Menu,
                     contentDescription = "Drag to reorder",
                     tint = MaterialTheme.colorScheme.outline,
                     modifier = dragHandleModifier.padding(12.dp)
                 )
+                Text(text = list.name.ifBlank { "Untitled" }, modifier = Modifier.weight(1f))
             }
         }
     }

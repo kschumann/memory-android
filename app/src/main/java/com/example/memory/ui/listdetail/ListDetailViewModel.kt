@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-private const val UNDO_WINDOW_MS = 4000L
+private const val UNDO_WINDOW_MS = 5000L
 
 class ListDetailViewModel(
     private val listId: Long,
@@ -55,6 +55,15 @@ class ListDetailViewModel(
 
     fun onStartEdit(id: Long) {
         _editingId.value = id
+    }
+
+    fun onCancelEdit(item: ItemEntity) {
+        viewModelScope.launch {
+            if (item.text.isBlank()) {
+                repository.deleteItem(item)
+            }
+            if (_editingId.value == item.id) _editingId.value = null
+        }
     }
 
     fun onCommitEdit(item: ItemEntity, newText: String) {

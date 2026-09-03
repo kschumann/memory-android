@@ -3,6 +3,7 @@ package com.example.memory.ui.listdetail
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -45,12 +46,14 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.memory.MemoryApp
+import com.example.memory.common.AppIconHeader
 import com.example.memory.common.SwipeToDeleteBox
 import com.example.memory.data.LIST_NAME_MAX_LENGTH
 import sh.calvin.reorderable.ReorderableItem
@@ -91,6 +94,8 @@ fun ListDetailScreen(listId: Long, onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
+          Column {
+            AppIconHeader()
             CenterAlignedTopAppBar(
                 title = {
                     val currentList = list
@@ -139,6 +144,7 @@ fun ListDetailScreen(listId: Long, onBack: () -> Unit) {
                     }
                 }
             )
+          }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
@@ -164,20 +170,30 @@ fun ListDetailScreen(listId: Long, onBack: () -> Unit) {
                 ReorderableItem(reorderState, key = item.id) { _ ->
                     SwipeToDeleteBox(
                         key = item.id,
-                        onDelete = { viewModel.onDeleteRequested(item) }
+                        onDelete = { viewModel.onDeleteRequested(item) },
+                        confirmMessage = "Are you sure you want to delete this memory?"
                     ) {
                         ItemCard(
                             item = item,
-                            isEditing = editingId == item.id,
                             onStartEdit = { viewModel.onStartEdit(item.id) },
-                            onCommitEdit = { newText -> viewModel.onCommitEdit(item, newText) },
-                            modifier = Modifier.longPressDraggableHandle(
+                            dragHandleModifier = Modifier.draggableHandle(
                                 onDragStopped = { viewModel.onReorder(localItems) }
                             )
                         )
                     }
                 }
             }
+        }
+        val editingItem = localItems.find { it.id == editingId }
+        if (editingItem != null) {
+            EditItemOverlay(
+                item = editingItem,
+                onCancel = { viewModel.onCancelEdit(editingItem) },
+                onSave = { newText -> viewModel.onCommitEdit(editingItem, newText) },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(16.dp)
+            )
         }
         }
     }

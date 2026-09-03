@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-private const val UNDO_WINDOW_MS = 4000L
+private const val UNDO_WINDOW_MS = 5000L
 
 class HomeViewModel(private val repository: MemoryRepository) : ViewModel() {
 

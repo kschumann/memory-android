@@ -6,6 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -42,6 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.memory.MemoryApp
+import com.example.memory.common.AppIconHeader
 import com.example.memory.common.SwipeToDeleteBox
 import com.example.memory.data.ListEntity
 import kotlinx.coroutines.launch
@@ -114,17 +116,20 @@ fun HomeScreen(onOpenList: (Long) -> Unit) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("My Memory") },
-                actions = {
-                    TextButton(onClick = {
-                        val saved = backupManager.getSavedFolderUri()
-                        if (saved == null) folderPickerLauncher.launch(null) else exportToSavedFolder(saved)
-                    }) {
-                        Text("Backup")
+            Column {
+                AppIconHeader()
+                TopAppBar(
+                    title = { Text("My Memory") },
+                    actions = {
+                        TextButton(onClick = {
+                            val saved = backupManager.getSavedFolderUri()
+                            if (saved == null) folderPickerLauncher.launch(null) else exportToSavedFolder(saved)
+                        }) {
+                            Text("Backup")
+                        }
                     }
-                }
-            )
+                )
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
@@ -150,7 +155,8 @@ fun HomeScreen(onOpenList: (Long) -> Unit) {
                 ReorderableItem(reorderState, key = list.id) { _ ->
                     SwipeToDeleteBox(
                         key = list.id,
-                        onDelete = { viewModel.onDeleteRequested(list) }
+                        onDelete = { viewModel.onDeleteRequested(list) },
+                        confirmMessage = "Are you sure you want to delete \"${list.name.ifBlank { "Untitled" }}\"?"
                     ) {
                         ListCard(
                             list = list,
