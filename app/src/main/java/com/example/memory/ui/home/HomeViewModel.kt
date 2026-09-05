@@ -35,13 +35,6 @@ class HomeViewModel(private val repository: MemoryRepository) : ViewModel() {
     private val _undoEvents = Channel<String>(Channel.BUFFERED)
     val undoEvents = _undoEvents.receiveAsFlow()
 
-    private val _exportEvents = Channel<String>(Channel.BUFFERED)
-    val exportEvents = _exportEvents.receiveAsFlow()
-
-    fun onExportResult(message: String) {
-        _exportEvents.trySend(message)
-    }
-
     fun onAddClicked() {
         viewModelScope.launch {
             val id = repository.insertListAtTop("")

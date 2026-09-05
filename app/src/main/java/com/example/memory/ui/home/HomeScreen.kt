@@ -7,8 +7,11 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -23,7 +26,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -42,6 +45,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.memory.MemoryApp
+import com.example.memory.common.AppIcon
 import com.example.memory.common.ScreenTopBar
 import com.example.memory.common.SwipeToDeleteBox
 import com.example.memory.data.ListEntity
@@ -76,35 +80,21 @@ fun HomeScreen(onOpenList: (Long) -> Unit) {
             if (result == SnackbarResult.ActionPerformed) viewModel.onUndoDelete()
         }
     }
-    LaunchedEffect(Unit) {
-        viewModel.exportEvents.collect { message ->
-            snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Short)
-        }
-    }
-
-    val folderPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+    val folderPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri: Uri? ->
         if (uri != null) {
             backupManager.saveFolderUri(uri)
             scope.launch {
                 try {
                     backupManager.exportNow(uri)
-                    viewModel.onExportResult("Backup exported")
                 } catch (e: Exception) {
-                    viewModel.onExportResult("Export failed")
+                    // Auto-backup will retry on the next change; nothing actionable to show here.
                 }
             }
         }
     }
-    fun exportToSavedFolder(uri: Uri) {
-        scope.launch {
-            try {
-                backupManager.exportNow(uri)
-                viewModel.onExportResult("Backup exported")
-            } catch (e: SecurityException) {
-                folderPickerLauncher.launch(null)
-            } catch (e: Exception) {
-                viewModel.onExportResult("Export failed")
-            }
+    LaunchedEffect(Unit) {
+        if (backupManager.getSavedFolderUri() == null) {
+            folderPickerLauncher.launch(null)
         }
     }
 
@@ -117,13 +107,11 @@ fun HomeScreen(onOpenList: (Long) -> Unit) {
         topBar = {
             ScreenTopBar {
                 TopAppBar(
-                    title = { Text("My Memory") },
-                    actions = {
-                        TextButton(onClick = {
-                            val saved = backupManager.getSavedFolderUri()
-                            if (saved == null) folderPickerLauncher.launch(null) else exportToSavedFolder(saved)
-                        }) {
-                            Text("Backup")
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            AppIcon()
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text("My Memory")
                         }
                     }
                 )

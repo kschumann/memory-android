@@ -14,6 +14,8 @@ class MemoryRepository(
 
     suspend fun getAllListsWithItems(): List<ListWithItems> = listDao.getAllListsWithItems()
 
+    fun observeAllListsWithItems(): Flow<List<ListWithItems>> = listDao.observeAllListsWithItems()
+
     suspend fun insertListAtTop(name: String): Long {
         val sortOrder = listDao.minSortOrder() - 1
         return listDao.insert(ListEntity(name = name, sortOrder = sortOrder, createdAt = System.currentTimeMillis()))

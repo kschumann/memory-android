@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +24,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -57,7 +57,11 @@ fun SwipeToDeleteBox(
 
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .matchParentSize()
+                // Card backgrounds are translucent, so without this the delete backdrop would
+                // show through at rest. Fade it in with drag progress instead of always drawing
+                // it at full strength.
+                .graphicsLayer { alpha = (-offsetAnim.value / thresholdPx).coerceIn(0f, 1f) }
                 .background(MaterialTheme.colorScheme.errorContainer, shape = RoundedCornerShape(12.dp))
                 .padding(horizontal = 12.dp),
             contentAlignment = Alignment.CenterEnd

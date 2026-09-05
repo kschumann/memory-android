@@ -4,8 +4,11 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -52,6 +55,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.memory.MemoryApp
+import com.example.memory.common.AppIcon
 import com.example.memory.common.ScreenTopBar
 import com.example.memory.common.SwipeToDeleteBox
 import com.example.memory.data.LIST_NAME_MAX_LENGTH
@@ -96,6 +100,9 @@ fun ListDetailScreen(listId: Long, onBack: () -> Unit) {
           ScreenTopBar {
             CenterAlignedTopAppBar(
                 title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    AppIcon()
+                    Spacer(modifier = Modifier.width(12.dp))
                     val currentList = list
                     if (currentList == null) {
                         Text("")
@@ -134,6 +141,7 @@ fun ListDetailScreen(listId: Long, onBack: () -> Unit) {
                                 detectTapGestures(onLongPress = { viewModel.onStartRenameTitle() })
                             }
                         )
+                    }
                     }
                 },
                 navigationIcon = {
