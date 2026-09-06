@@ -17,9 +17,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -39,12 +42,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.memory.MemoryApp
+import com.example.memory.R
 import com.example.memory.common.AppIcon
 import com.example.memory.common.ScreenTopBar
 import com.example.memory.common.SwipeToDeleteBox
@@ -65,9 +70,16 @@ fun HomeScreen(onOpenList: (Long) -> Unit) {
 
     val lists by viewModel.lists.collectAsStateWithLifecycle()
     val editingId by viewModel.editingId.collectAsStateWithLifecycle()
+    val viewMode by viewModel.viewMode.collectAsStateWithLifecycle()
+    val flatItems by viewModel.flatItems.collectAsStateWithLifecycle()
 
     var localLists by remember { mutableStateOf(lists) }
     LaunchedEffect(lists) { localLists = lists }
+
+    var localFlatItems by remember { mutableStateOf(flatItems) }
+    LaunchedEffect(flatItems) { localFlatItems = flatItems }
+
+    var settingsExpanded by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(Unit) {
@@ -103,6 +115,11 @@ fun HomeScreen(onOpenList: (Long) -> Unit) {
         localLists = localLists.toMutableList().apply { add(to.index, removeAt(from.index)) }
     }
 
+    val flatListState = rememberLazyListState()
+    val flatReorderState = rememberReorderableLazyListState(flatListState) { from, to ->
+        localFlatItems = localFlatItems.toMutableList().apply { add(to.index, removeAt(from.index)) }
+    }
+
     Scaffold(
         topBar = {
             ScreenTopBar {
@@ -113,14 +130,38 @@ fun HomeScreen(onOpenList: (Long) -> Unit) {
                             Spacer(modifier = Modifier.width(12.dp))
                             Text("My Memory")
                         }
+                    },
+                    actions = {
+                        Box {
+                            IconButton(onClick = { settingsExpanded = true }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_settings),
+                                    contentDescription = "Settings"
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = settingsExpanded,
+                                onDismissRequest = { settingsExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(if (viewMode == HomeViewMode.CARDS) "List View" else "Card View") },
+                                    onClick = {
+                                        viewModel.onToggleViewMode()
+                                        settingsExpanded = false
+                                    }
+                                )
+                            }
+                        }
                     }
                 )
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            FloatingActionButton(onClick = { viewModel.onAddClicked() }) {
-                Icon(Icons.Filled.Add, contentDescription = "New list")
+            if (viewMode == HomeViewMode.CARDS) {
+                FloatingActionButton(onClick = { viewModel.onAddClicked() }) {
+                    Icon(Icons.Filled.Add, contentDescription = "New list")
+                }
             }
         }
     ) { innerPadding ->
@@ -131,27 +172,47 @@ fun HomeScreen(onOpenList: (Long) -> Unit) {
                 .padding(innerPadding)
                 .pointerInput(Unit) { detectTapGestures(onTap = { focusManager.clearFocus() }) }
         ) {
-        LazyColumn(
-            state = listState,
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(localLists, key = { it.id }) { list ->
-                ReorderableItem(reorderState, key = list.id) { _ ->
-                    SwipeToDeleteBox(
-                        key = list.id,
-                        onDelete = { viewModel.onDeleteRequested(list) },
-                        confirmMessage = "Are you sure you want to delete \"${list.name.ifBlank { "Untitled" }}\"?"
-                    ) {
-                        ListCard(
-                            list = list,
-                            isEditing = editingId == list.id,
-                            onOpen = { onOpenList(list.id) },
-                            onStartRename = { viewModel.onStartRename(list.id) },
-                            onCommitEdit = { newText -> viewModel.onCommitEdit(list, newText) },
+        if (viewMode == HomeViewMode.CARDS) {
+            LazyColumn(
+                state = listState,
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(localLists, key = { it.id }) { list ->
+                    ReorderableItem(reorderState, key = list.id) { _ ->
+                        SwipeToDeleteBox(
+                            key = list.id,
+                            onDelete = { viewModel.onDeleteRequested(list) },
+                            confirmMessage = "Are you sure you want to delete \"${list.name.ifBlank { "Untitled" }}\"?"
+                        ) {
+                            ListCard(
+                                list = list,
+                                isEditing = editingId == list.id,
+                                onOpen = { onOpenList(list.id) },
+                                onStartRename = { viewModel.onStartRename(list.id) },
+                                onCommitEdit = { newText -> viewModel.onCommitEdit(list, newText) },
+                                dragHandleModifier = Modifier.draggableHandle(
+                                    onDragStopped = { viewModel.onReorder(localLists) }
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            LazyColumn(
+                state = flatListState,
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(localFlatItems, key = { it.item.id }) { entry ->
+                    ReorderableItem(flatReorderState, key = entry.item.id) { _ ->
+                        FlatItemRow(
+                            entry = entry,
                             dragHandleModifier = Modifier.draggableHandle(
-                                onDragStopped = { viewModel.onReorder(localLists) }
+                                onDragStopped = { viewModel.onReorderFlatItems(localFlatItems) }
                             )
                         )
                     }

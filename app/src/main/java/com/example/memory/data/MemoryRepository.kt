@@ -12,6 +12,8 @@ class MemoryRepository(
 
     fun observeItems(listId: Long): Flow<List<ItemEntity>> = itemDao.observeItems(listId)
 
+    fun observeAllItemsFlat(): Flow<List<ItemWithListName>> = itemDao.observeAllItemsWithListName()
+
     suspend fun getAllListsWithItems(): List<ListWithItems> = listDao.getAllListsWithItems()
 
     fun observeAllListsWithItems(): Flow<List<ListWithItems>> = listDao.observeAllListsWithItems()
@@ -35,7 +37,16 @@ class MemoryRepository(
 
     suspend fun insertItemAtTop(listId: Long, text: String): Long {
         val sortOrder = itemDao.minSortOrder(listId) - 1
-        return itemDao.insert(ItemEntity(listId = listId, text = text, sortOrder = sortOrder, createdAt = System.currentTimeMillis()))
+        val globalSortOrder = itemDao.minGlobalSortOrder() - 1
+        return itemDao.insert(
+            ItemEntity(
+                listId = listId,
+                text = text,
+                sortOrder = sortOrder,
+                globalSortOrder = globalSortOrder,
+                createdAt = System.currentTimeMillis()
+            )
+        )
     }
 
     suspend fun editItem(item: ItemEntity, newText: String) {
@@ -44,6 +55,10 @@ class MemoryRepository(
 
     suspend fun reorderItems(items: List<ItemEntity>) {
         itemDao.updateAll(items.mapIndexed { index, item -> item.copy(sortOrder = index) })
+    }
+
+    suspend fun reorderFlatItems(items: List<ItemWithListName>) {
+        itemDao.updateAll(items.mapIndexed { index, entry -> entry.item.copy(globalSortOrder = index) })
     }
 
     suspend fun deleteItem(item: ItemEntity) {

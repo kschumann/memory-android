@@ -2,8 +2,8 @@ package com.example.memory.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Light scheme: off-white surfaces, light-grey containers, near-black text/contrast
-val LightBackground = Color(0xFFFAFAF8)
+// Light scheme: medium-grey body background, light-grey containers, near-black text/contrast
+val LightBackground = Color(0xFF9E9E9E)
 val LightSurface = Color(0xFFFFFFFF)
 val LightSurfaceVariant = Color(0xFFEDEDEA)
 val LightOnBackground = Color(0xFF1C1C1A)

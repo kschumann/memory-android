@@ -24,5 +24,9 @@ data class ItemEntity(
     val listId: Long,
     val text: String,
     val sortOrder: Int,
+    // Rank across every list's items combined, independent from sortOrder (rank within just
+    // this item's own list). The flattened cross-list List View reorders this field only, so
+    // dragging there never changes an item's position within its own list.
+    val globalSortOrder: Int = 0,
     val createdAt: Long
 )

@@ -4,6 +4,7 @@ import android.app.Application
 import android.util.Log
 import androidx.room.Room
 import com.example.memory.backup.BackupManager
+import com.example.memory.data.MIGRATION_1_2
 import com.example.memory.data.MemoryDatabase
 import com.example.memory.data.MemoryRepository
 import kotlinx.coroutines.CoroutineScope
@@ -27,7 +28,9 @@ class MemoryApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        val database = Room.databaseBuilder(this, MemoryDatabase::class.java, "memory.db").build()
+        val database = Room.databaseBuilder(this, MemoryDatabase::class.java, "memory.db")
+            .addMigrations(MIGRATION_1_2)
+            .build()
         repository = MemoryRepository(database.listDao(), database.itemDao())
         backupManager = BackupManager(this, repository)
 

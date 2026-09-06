@@ -9,11 +9,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -30,7 +30,10 @@ fun AppIcon(modifier: Modifier = Modifier, size: Dp = 32.dp) {
         modifier = modifier
             .size(size)
             .clip(CircleShape)
-            .background(colorResource(id = R.color.ic_launcher_background)),
+            // Matches the TopAppBar's own background (colorScheme.surface) rather than the
+            // launcher icon's XML color resource, so the circle blends into the header bar in
+            // both light and dark theme instead of only coincidentally matching light mode.
+            .background(MaterialTheme.colorScheme.surface),
         contentAlignment = Alignment.Center
     ) {
         Image(
