@@ -45,4 +45,23 @@ class MemoryDatabaseMigrationTest {
         }
         assertEquals(mapOf(1L to 0, 2L to 1, 3L to 2), ranks)
     }
+
+    @Test
+    fun migrate2To3_addsArchivedDefaultingToFalseForExistingRows() {
+        helper.createDatabase(testDb, 2).apply {
+            execSQL("INSERT INTO lists (id, name, sortOrder, createdAt) VALUES (1, 'List A', 0, 100)")
+            execSQL(
+                "INSERT INTO items (id, listId, text, sortOrder, globalSortOrder, createdAt) VALUES (1, 1, 'A-first', 0, 0, 100)"
+            )
+            close()
+        }
+
+        val migrated = helper.runMigrationsAndValidate(testDb, 3, true, MIGRATION_2_3)
+
+        migrated.query("SELECT archived, archivedAt FROM items WHERE id = 1").use { cursor ->
+            assertEquals(true, cursor.moveToFirst())
+            assertEquals(0, cursor.getInt(0))
+            assertEquals(true, cursor.isNull(1))
+        }
+    }
 }

@@ -12,6 +12,8 @@ class MemoryRepository(
 
     fun observeItems(listId: Long): Flow<List<ItemEntity>> = itemDao.observeItems(listId)
 
+    fun observeArchivedItems(listId: Long): Flow<List<ItemEntity>> = itemDao.observeArchivedItems(listId)
+
     fun observeAllItemsFlat(): Flow<List<ItemWithListName>> = itemDao.observeAllItemsWithListName()
 
     suspend fun getAllListsWithItems(): List<ListWithItems> = listDao.getAllListsWithItems()
@@ -63,5 +65,13 @@ class MemoryRepository(
 
     suspend fun deleteItem(item: ItemEntity) {
         itemDao.delete(item)
+    }
+
+    suspend fun archiveItem(item: ItemEntity) {
+        itemDao.update(item.copy(archived = true, archivedAt = System.currentTimeMillis()))
+    }
+
+    suspend fun restoreItem(item: ItemEntity) {
+        itemDao.update(item.copy(archived = false))
     }
 }

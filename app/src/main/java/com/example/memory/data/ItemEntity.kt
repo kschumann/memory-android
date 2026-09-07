@@ -28,5 +28,10 @@ data class ItemEntity(
     // this item's own list). The flattened cross-list List View reorders this field only, so
     // dragging there never changes an item's position within its own list.
     val globalSortOrder: Int = 0,
-    val createdAt: Long
+    val createdAt: Long,
+    // Archived notes are hidden from the active list (and the flattened Home List View) but kept
+    // in place: sortOrder/globalSortOrder are left untouched so restoring just un-hides the row
+    // where it already sorts, rather than re-inserting it somewhere new.
+    val archived: Boolean = false,
+    val archivedAt: Long? = null
 )

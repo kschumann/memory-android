@@ -33,3 +33,8 @@ val DarkTertiaryContainer = Color(0xFF333330)
 val DarkOnTertiaryContainer = Color(0xFFE4E4E0)
 val DarkOutline = Color(0xFF8A8A85)
 val DarkOutlineVariant = Color(0xFF4A4A46)
+
+// Archive swipe action - a fixed green reads as "archive" regardless of light/dark theme, the
+// same way delete's red errorContainer isn't meant to blend into either surface.
+val ArchiveContainer = Color(0xFF2E7D32)
+val OnArchiveContainer = Color(0xFFFFFFFF)

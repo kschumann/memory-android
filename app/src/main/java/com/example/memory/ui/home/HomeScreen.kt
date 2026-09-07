@@ -52,7 +52,7 @@ import com.example.memory.MemoryApp
 import com.example.memory.R
 import com.example.memory.common.AppIcon
 import com.example.memory.common.ScreenTopBar
-import com.example.memory.common.SwipeToDeleteBox
+import com.example.memory.common.SwipeActionBox
 import com.example.memory.data.ListEntity
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
@@ -124,9 +124,10 @@ fun HomeScreen(onOpenList: (Long) -> Unit) {
         topBar = {
             ScreenTopBar {
                 TopAppBar(
+                    expandedHeight = 80.dp,
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            AppIcon()
+                            AppIcon(size = 64.dp)
                             Spacer(modifier = Modifier.width(12.dp))
                             Text("My Memory")
                         }
@@ -181,7 +182,7 @@ fun HomeScreen(onOpenList: (Long) -> Unit) {
             ) {
                 items(localLists, key = { it.id }) { list ->
                     ReorderableItem(reorderState, key = list.id) { _ ->
-                        SwipeToDeleteBox(
+                        SwipeActionBox(
                             key = list.id,
                             onDelete = { viewModel.onDeleteRequested(list) },
                             confirmMessage = "Are you sure you want to delete \"${list.name.ifBlank { "Untitled" }}\"?"

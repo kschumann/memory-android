@@ -8,7 +8,9 @@ data class ItemExport(
     val text: String,
     val sortOrder: Int,
     val globalSortOrder: Int,
-    val createdAt: Long
+    val createdAt: Long,
+    val archived: Boolean = false,
+    val archivedAt: Long? = null
 )
 
 @Serializable
@@ -34,7 +36,9 @@ fun ListWithItems.toExport(): ListExport = ListExport(
             text = item.text,
             sortOrder = item.sortOrder,
             globalSortOrder = item.globalSortOrder,
-            createdAt = item.createdAt
+            createdAt = item.createdAt,
+            archived = item.archived,
+            archivedAt = item.archivedAt
         )
     }
 )
