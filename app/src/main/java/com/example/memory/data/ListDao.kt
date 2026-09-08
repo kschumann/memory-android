@@ -17,6 +17,10 @@ interface ListDao {
     @Query("SELECT * FROM lists ORDER BY sortOrder ASC")
     suspend fun getAllListsWithItems(): List<ListWithItems>
 
+    @Transaction
+    @Query("SELECT * FROM lists ORDER BY sortOrder ASC")
+    fun observeAllListsWithItems(): Flow<List<ListWithItems>>
+
     @Query("SELECT * FROM lists WHERE id = :id")
     fun observeList(id: Long): Flow<ListEntity?>
 

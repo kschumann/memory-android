@@ -7,7 +7,10 @@ import kotlinx.serialization.Serializable
 data class ItemExport(
     val text: String,
     val sortOrder: Int,
-    val createdAt: Long
+    val globalSortOrder: Int,
+    val createdAt: Long,
+    val archived: Boolean = false,
+    val archivedAt: Long? = null
 )
 
 @Serializable
@@ -29,6 +32,13 @@ fun ListWithItems.toExport(): ListExport = ListExport(
     sortOrder = list.sortOrder,
     createdAt = list.createdAt,
     items = items.sortedBy { it.sortOrder }.map { item ->
-        ItemExport(text = item.text, sortOrder = item.sortOrder, createdAt = item.createdAt)
+        ItemExport(
+            text = item.text,
+            sortOrder = item.sortOrder,
+            globalSortOrder = item.globalSortOrder,
+            createdAt = item.createdAt,
+            archived = item.archived,
+            archivedAt = item.archivedAt
+        )
     }
 )

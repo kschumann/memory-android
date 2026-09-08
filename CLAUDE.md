@@ -19,7 +19,7 @@
 ## Working agreement
 - Work on a branch named feature/<short-name>. Never work directly on main.
 - Definition of done: assembleDebug, testDebugUnitTest and connectedDebugAndroidTest all pass.
-- Commit when green, with a message explaining the why. NEVER push. Karl pushes after review.
+- Commit when green, with a message explaining the why. Push only after Karl provides explicit instructions to do so.
 - Never read, write, or reference the signing keystore or ~/.gradle/gradle.properties.
 - Never commit keystore files, gradle.properties, or anything under keys/.
 

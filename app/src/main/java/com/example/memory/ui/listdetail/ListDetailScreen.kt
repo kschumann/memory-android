@@ -4,8 +4,11 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -17,6 +20,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -52,8 +56,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.memory.MemoryApp
+import com.example.memory.common.AppIcon
 import com.example.memory.common.ScreenTopBar
-import com.example.memory.common.SwipeToDeleteBox
+import com.example.memory.common.SwipeActionBox
 import com.example.memory.data.LIST_NAME_MAX_LENGTH
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -68,6 +73,7 @@ fun ListDetailScreen(listId: Long, onBack: () -> Unit) {
 
     val list by viewModel.list.collectAsStateWithLifecycle()
     val items by viewModel.items.collectAsStateWithLifecycle()
+    val archivedItems by viewModel.archivedItems.collectAsStateWithLifecycle()
     val editingId by viewModel.editingId.collectAsStateWithLifecycle()
     val titleEditing by viewModel.titleEditing.collectAsStateWithLifecycle()
 
@@ -95,7 +101,11 @@ fun ListDetailScreen(listId: Long, onBack: () -> Unit) {
         topBar = {
           ScreenTopBar {
             CenterAlignedTopAppBar(
+                expandedHeight = 80.dp,
                 title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    AppIcon(size = 64.dp)
+                    Spacer(modifier = Modifier.width(12.dp))
                     val currentList = list
                     if (currentList == null) {
                         Text("")
@@ -135,6 +145,7 @@ fun ListDetailScreen(listId: Long, onBack: () -> Unit) {
                             }
                         )
                     }
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -166,10 +177,11 @@ fun ListDetailScreen(listId: Long, onBack: () -> Unit) {
         ) {
             items(localItems, key = { it.id }) { item ->
                 ReorderableItem(reorderState, key = item.id) { _ ->
-                    SwipeToDeleteBox(
+                    SwipeActionBox(
                         key = item.id,
                         onDelete = { viewModel.onDeleteRequested(item) },
-                        confirmMessage = "Are you sure you want to delete this memory?"
+                        confirmMessage = "Are you sure you want to delete this memory?",
+                        onArchive = { viewModel.onArchiveRequested(item) }
                     ) {
                         ItemCard(
                             item = item,
@@ -179,6 +191,17 @@ fun ListDetailScreen(listId: Long, onBack: () -> Unit) {
                             )
                         )
                     }
+                }
+            }
+            if (archivedItems.isNotEmpty()) {
+                item {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                }
+                items(archivedItems, key = { "archived-${it.id}" }) { archivedItem ->
+                    ArchivedItemRow(
+                        item = archivedItem,
+                        onRestore = { viewModel.onRestoreRequested(archivedItem) }
+                    )
                 }
             }
         }

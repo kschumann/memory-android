@@ -37,6 +37,9 @@ class ListDetailViewModel(
             all.filter { it.id != deletedId }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val archivedItems: StateFlow<List<ItemEntity>> =
+        repository.observeArchivedItems(listId).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     private val _editingId = MutableStateFlow<Long?>(null)
     val editingId: StateFlow<Long?> = _editingId
 
@@ -121,5 +124,13 @@ class ListDetailViewModel(
         pendingDeleteJob?.cancel()
         pendingDelete = null
         pendingDeleteId.value = null
+    }
+
+    fun onArchiveRequested(item: ItemEntity) {
+        viewModelScope.launch { repository.archiveItem(item) }
+    }
+
+    fun onRestoreRequested(item: ItemEntity) {
+        viewModelScope.launch { repository.restoreItem(item) }
     }
 }

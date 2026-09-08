@@ -12,7 +12,13 @@ class MemoryRepository(
 
     fun observeItems(listId: Long): Flow<List<ItemEntity>> = itemDao.observeItems(listId)
 
+    fun observeArchivedItems(listId: Long): Flow<List<ItemEntity>> = itemDao.observeArchivedItems(listId)
+
+    fun observeAllItemsFlat(): Flow<List<ItemWithListName>> = itemDao.observeAllItemsWithListName()
+
     suspend fun getAllListsWithItems(): List<ListWithItems> = listDao.getAllListsWithItems()
+
+    fun observeAllListsWithItems(): Flow<List<ListWithItems>> = listDao.observeAllListsWithItems()
 
     suspend fun insertListAtTop(name: String): Long {
         val sortOrder = listDao.minSortOrder() - 1
@@ -33,7 +39,16 @@ class MemoryRepository(
 
     suspend fun insertItemAtTop(listId: Long, text: String): Long {
         val sortOrder = itemDao.minSortOrder(listId) - 1
-        return itemDao.insert(ItemEntity(listId = listId, text = text, sortOrder = sortOrder, createdAt = System.currentTimeMillis()))
+        val globalSortOrder = itemDao.minGlobalSortOrder() - 1
+        return itemDao.insert(
+            ItemEntity(
+                listId = listId,
+                text = text,
+                sortOrder = sortOrder,
+                globalSortOrder = globalSortOrder,
+                createdAt = System.currentTimeMillis()
+            )
+        )
     }
 
     suspend fun editItem(item: ItemEntity, newText: String) {
@@ -44,7 +59,19 @@ class MemoryRepository(
         itemDao.updateAll(items.mapIndexed { index, item -> item.copy(sortOrder = index) })
     }
 
+    suspend fun reorderFlatItems(items: List<ItemWithListName>) {
+        itemDao.updateAll(items.mapIndexed { index, entry -> entry.item.copy(globalSortOrder = index) })
+    }
+
     suspend fun deleteItem(item: ItemEntity) {
         itemDao.delete(item)
+    }
+
+    suspend fun archiveItem(item: ItemEntity) {
+        itemDao.update(item.copy(archived = true, archivedAt = System.currentTimeMillis()))
+    }
+
+    suspend fun restoreItem(item: ItemEntity) {
+        itemDao.update(item.copy(archived = false))
     }
 }

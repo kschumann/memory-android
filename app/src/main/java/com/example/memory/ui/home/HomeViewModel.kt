@@ -3,6 +3,7 @@ package com.example.memory.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.memory.data.LIST_NAME_MAX_LENGTH
+import com.example.memory.data.ItemWithListName
 import com.example.memory.data.ListEntity
 import com.example.memory.data.MemoryRepository
 import kotlinx.coroutines.Job
@@ -18,6 +19,8 @@ import kotlinx.coroutines.launch
 
 private const val UNDO_WINDOW_MS = 5000L
 
+enum class HomeViewMode { CARDS, LIST }
+
 class HomeViewModel(private val repository: MemoryRepository) : ViewModel() {
 
     private val pendingDeleteId = MutableStateFlow<Long?>(null)
@@ -32,15 +35,22 @@ class HomeViewModel(private val repository: MemoryRepository) : ViewModel() {
     private val _editingId = MutableStateFlow<Long?>(null)
     val editingId: StateFlow<Long?> = _editingId
 
+    private val _viewMode = MutableStateFlow(HomeViewMode.CARDS)
+    val viewMode: StateFlow<HomeViewMode> = _viewMode
+
+    val flatItems: StateFlow<List<ItemWithListName>> =
+        repository.observeAllItemsFlat().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun onToggleViewMode() {
+        _viewMode.value = if (_viewMode.value == HomeViewMode.CARDS) HomeViewMode.LIST else HomeViewMode.CARDS
+    }
+
+    fun onReorderFlatItems(newOrder: List<ItemWithListName>) {
+        viewModelScope.launch { repository.reorderFlatItems(newOrder) }
+    }
+
     private val _undoEvents = Channel<String>(Channel.BUFFERED)
     val undoEvents = _undoEvents.receiveAsFlow()
-
-    private val _exportEvents = Channel<String>(Channel.BUFFERED)
-    val exportEvents = _exportEvents.receiveAsFlow()
-
-    fun onExportResult(message: String) {
-        _exportEvents.trySend(message)
-    }
 
     fun onAddClicked() {
         viewModelScope.launch {
