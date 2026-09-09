@@ -4,6 +4,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -49,6 +50,10 @@ fun ListCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
+        // Rounder than the default (and than the note/item cards below it) and shorter, so a
+        // list card reads as a visually distinct, higher-level thing from the note cards nested
+        // inside a list.
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
@@ -89,7 +94,7 @@ fun ListCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .combinedClickable(onClick = onOpen, onLongClick = onStartRename)
-                    .padding(start = 4.dp, top = 16.dp, bottom = 16.dp, end = 16.dp),
+                    .padding(start = 4.dp, top = 8.dp, bottom = 8.dp, end = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(

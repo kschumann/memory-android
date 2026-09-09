@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import java.util.UUID
 
 const val ITEM_TEXT_MAX_LENGTH = 2000
 
@@ -17,7 +18,7 @@ const val ITEM_TEXT_MAX_LENGTH = 2000
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("listId")]
+    indices = [Index("listId"), Index(value = ["uid"], unique = true)]
 )
 data class ItemEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -33,5 +34,9 @@ data class ItemEntity(
     // in place: sortOrder/globalSortOrder are left untouched so restoring just un-hides the row
     // where it already sorts, rather than re-inserting it somewhere new.
     val archived: Boolean = false,
-    val archivedAt: Long? = null
+    val archivedAt: Long? = null,
+    // Stable identity for the export/import layer, independent of the Room-local `id`. Assigned
+    // once at creation and never regenerated - not on edit, export, or re-import of a file that
+    // already has one - so a restored row can be recognized as "the same row" across DB rebuilds.
+    val uid: String = UUID.randomUUID().toString()
 )

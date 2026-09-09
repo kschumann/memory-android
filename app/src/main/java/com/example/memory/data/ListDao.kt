@@ -38,4 +38,9 @@ interface ListDao {
 
     @Delete
     suspend fun delete(list: ListEntity): Unit
+
+    // Cascades to every item via ItemEntity's FK (onDelete = CASCADE). Used by restore-replace,
+    // which always starts from a clean slate rather than merging with existing data.
+    @Query("DELETE FROM lists")
+    suspend fun deleteAll(): Unit
 }
