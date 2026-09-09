@@ -53,7 +53,7 @@ fun ListCard(
         // Rounder than the default (and than the note/item cards below it) and shorter, so a
         // list card reads as a visually distinct, higher-level thing from the note cards nested
         // inside a list.
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
