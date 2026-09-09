@@ -1,5 +1,7 @@
 package com.example.memory.data
 
+import com.example.memory.backup.BackupExport
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 
 class MemoryRepository(
@@ -73,5 +75,38 @@ class MemoryRepository(
 
     suspend fun restoreItem(item: ItemEntity) {
         itemDao.update(item.copy(archived = false))
+    }
+
+    // Inserts every list/item from a decoded backup file as new rows. Each row's own uid is
+    // preserved from the file untouched (falling back to a fresh one only for a version-0 file
+    // that never had uid); Room assigns fresh local `id`s regardless, since `id` was never part
+    // of the file format and a restored item's listId is wired to whatever `id` its parent list
+    // just got. Callers decide when this is appropriate to call (e.g. into an empty database) -
+    // this does not clear or merge with any existing data.
+    suspend fun importBackup(export: BackupExport) {
+        for (listExport in export.lists) {
+            val listId = listDao.insert(
+                ListEntity(
+                    name = listExport.name,
+                    sortOrder = listExport.sortOrder,
+                    createdAt = listExport.createdAt,
+                    uid = listExport.uid ?: UUID.randomUUID().toString()
+                )
+            )
+            for (itemExport in listExport.items) {
+                itemDao.insert(
+                    ItemEntity(
+                        listId = listId,
+                        text = itemExport.text,
+                        sortOrder = itemExport.sortOrder,
+                        globalSortOrder = itemExport.globalSortOrder,
+                        createdAt = itemExport.createdAt,
+                        archived = itemExport.archived,
+                        archivedAt = itemExport.archivedAt,
+                        uid = itemExport.uid ?: UUID.randomUUID().toString()
+                    )
+                )
+            }
+        }
     }
 }

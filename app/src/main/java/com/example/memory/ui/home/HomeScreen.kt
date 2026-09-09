@@ -3,13 +3,16 @@ package com.example.memory.ui.home
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,17 +20,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -50,6 +56,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.memory.MemoryApp
 import com.example.memory.R
+import com.example.memory.backup.BackupHealth
 import com.example.memory.common.AppIcon
 import com.example.memory.common.ScreenTopBar
 import com.example.memory.common.SwipeActionBox
@@ -72,6 +79,7 @@ fun HomeScreen(onOpenList: (Long) -> Unit) {
     val editingId by viewModel.editingId.collectAsStateWithLifecycle()
     val viewMode by viewModel.viewMode.collectAsStateWithLifecycle()
     val flatItems by viewModel.flatItems.collectAsStateWithLifecycle()
+    val backupHealth by backupManager.health.collectAsStateWithLifecycle()
 
     var localLists by remember { mutableStateOf(lists) }
     LaunchedEffect(lists) { localLists = lists }
@@ -99,7 +107,7 @@ fun HomeScreen(onOpenList: (Long) -> Unit) {
                 try {
                     backupManager.exportNow(uri)
                 } catch (e: Exception) {
-                    // Auto-backup will retry on the next change; nothing actionable to show here.
+                    // exportNow already recorded this as unhealthy; the banner below covers it.
                 }
             }
         }
@@ -167,10 +175,42 @@ fun HomeScreen(onOpenList: (Long) -> Unit) {
         }
     ) { innerPadding ->
         val focusManager = LocalFocusManager.current
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+        ) {
+        if (backupHealth == BackupHealth.UNHEALTHY) {
+            Surface(
+                color = MaterialTheme.colorScheme.errorContainer,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { folderPickerLauncher.launch(null) }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Backup isn't working - tap to choose a new folder",
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f)
                 .pointerInput(Unit) { detectTapGestures(onTap = { focusManager.clearFocus() }) }
         ) {
         if (viewMode == HomeViewMode.CARDS) {
@@ -219,6 +259,7 @@ fun HomeScreen(onOpenList: (Long) -> Unit) {
                     }
                 }
             }
+        }
         }
         }
     }

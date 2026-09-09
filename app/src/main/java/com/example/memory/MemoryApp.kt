@@ -16,8 +16,13 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
-private const val AUTO_BACKUP_DEBOUNCE_MS = 500L
+// Coalesces rapid edits into one write instead of one per keystroke, while staying well inside
+// what a user would consider "effectively always current" (R2.6). MainActivity forces an
+// immediate write on onPause/onStop so a pending debounced write isn't lost if the process is
+// killed while backgrounded.
+private const val AUTO_BACKUP_DEBOUNCE_MS = 3000L
 
 @OptIn(FlowPreview::class)
 class MemoryApp : Application() {
@@ -40,6 +45,12 @@ class MemoryApp : Application() {
             .debounce(AUTO_BACKUP_DEBOUNCE_MS)
             .onEach { autoBackup() }
             .launchIn(applicationScope)
+    }
+
+    // Called from MainActivity.onPause/onStop to flush a pending debounced write before the
+    // process can be killed while backgrounded (R2.6).
+    fun triggerImmediateBackup() {
+        applicationScope.launch { autoBackup() }
     }
 
     private suspend fun autoBackup() {

@@ -17,4 +17,17 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    // Force a write on backgrounding so a pending debounced auto-backup isn't lost if the
+    // process is killed while backgrounded (R2.6) - this is the app's only Activity, so this
+    // is equivalent to a process-lifecycle observer without adding one.
+    override fun onPause() {
+        super.onPause()
+        (application as MemoryApp).triggerImmediateBackup()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        (application as MemoryApp).triggerImmediateBackup()
+    }
 }
