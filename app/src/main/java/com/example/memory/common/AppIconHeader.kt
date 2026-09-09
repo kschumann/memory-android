@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -22,8 +23,14 @@ import com.example.memory.R
 // R.mipmap.ic_launcher resolves to an <adaptive-icon> XML on API 26+, which Compose's
 // painterResource can't load (it only supports VectorDrawables and rasterized bitmaps). The
 // foreground layer is a plain PNG per density, so we composite it over the launcher background
-// color ourselves instead. The foreground PNG follows the adaptive-icon safe-zone spec (glyph
-// only fills the inner ~66% of the canvas), so it's scaled up 1.5x to fill the visible circle.
+// color ourselves instead. Measured directly against the actual asset (not the usual adaptive-icon
+// 66% safe-zone assumption, which doesn't hold here): the glyph only occupies the inner ~50% of
+// the canvas, so it needs to be scaled up 2x to fill the visible circle. That has to be
+// requiredSize, not size: a plain Box clamps a child's measured size down to its own bounds by
+// default, which was silently capping the "oversized" image back down to exactly fill the circle
+// with no overflow left for the clip to crop - i.e. the scale factor was never actually taking
+// effect. requiredSize ignores that incoming constraint so the image truly renders oversized and
+// clip(CircleShape) has something to crop.
 @Composable
 fun AppIcon(modifier: Modifier = Modifier, size: Dp = 32.dp) {
     Box(
@@ -39,7 +46,7 @@ fun AppIcon(modifier: Modifier = Modifier, size: Dp = 32.dp) {
         Image(
             painter = painterResource(id = R.mipmap.ic_launcher_foreground),
             contentDescription = null,
-            modifier = Modifier.size(size * 1.5f)
+            modifier = Modifier.requiredSize(size * 2f)
         )
     }
 }

@@ -94,7 +94,7 @@ fun ListCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .combinedClickable(onClick = onOpen, onLongClick = onStartRename)
-                    .padding(start = 4.dp, top = 8.dp, bottom = 8.dp, end = 16.dp),
+                    .padding(start = 4.dp, top = 4.dp, bottom = 4.dp, end = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
