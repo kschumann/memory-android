@@ -1,12 +1,15 @@
 package com.example.memory.backup
 
+import android.net.Uri
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.memory.data.MemoryDatabase
 import com.example.memory.data.MemoryRepository
+import java.io.File
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -17,12 +20,16 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class BackupRoundTripTest {
 
-    @Test
-    fun exportRestoreExport_matchesApartFromExportedAt() = runBlocking {
+    private fun newRepository(): Pair<MemoryDatabase, MemoryRepository> {
         val db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), MemoryDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        val repository = MemoryRepository(db.listDao(), db.itemDao())
+        return db to MemoryRepository(db.listDao(), db.itemDao(), db)
+    }
+
+    @Test
+    fun exportRestoreExport_matchesApartFromExportedAt() = runBlocking {
+        val (db, repository) = newRepository()
 
         val original = BackupExport(
             formatVersion = CURRENT_BACKUP_FORMAT_VERSION,
@@ -72,7 +79,7 @@ class BackupRoundTripTest {
         )
 
         try {
-            repository.importBackup(original)
+            repository.replaceAllWithBackup(original)
 
             val restored = BackupExport(
                 formatVersion = CURRENT_BACKUP_FORMAT_VERSION,
@@ -88,12 +95,10 @@ class BackupRoundTripTest {
     }
 
     @Test
-    fun restoreFrom_mintsFreshUidsForAVersion0FileThatNeverHadOne() = runBlocking {
-        val db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), MemoryDatabase::class.java)
-            .allowMainThreadQueries()
-            .build()
-        val repository = MemoryRepository(db.listDao(), db.itemDao())
-        val backupManager = BackupManager(ApplicationProvider.getApplicationContext(), repository)
+    fun validateAndRestoreVersion0File_mintsFreshUidsForRowsThatNeverHadOne() = runBlocking {
+        val (db, repository) = newRepository()
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val backupManager = BackupManager(context, repository)
 
         // No formatVersion, appVersion, or uid keys at all - exactly what every file written
         // before this feature existed looks like.
@@ -114,13 +119,18 @@ class BackupRoundTripTest {
         """.trimIndent()
 
         try {
-            backupManager.restoreFrom(version0Json)
+            val file = File(context.cacheDir, "version0.json").apply { writeText(version0Json) }
+            val preflight = backupManager.validatePickedFile(Uri.fromFile(file))
+            check(preflight is RestorePreflight.Ready) { "Expected a valid version-0 file to be Ready, got $preflight" }
+            assertEquals(0, preflight.export.formatVersion)
+
+            repository.replaceAllWithBackup(preflight.export)
 
             val lists = repository.getAllListsWithItems()
             assertEquals(1, lists.size)
-            assertEquals(false, lists[0].list.uid.isBlank())
+            assertTrue(lists[0].list.uid.isNotBlank())
             assertEquals(1, lists[0].items.size)
-            assertEquals(false, lists[0].items[0].uid.isBlank())
+            assertTrue(lists[0].items[0].uid.isNotBlank())
         } finally {
             db.close()
         }

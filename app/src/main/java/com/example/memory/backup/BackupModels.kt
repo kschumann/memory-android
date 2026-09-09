@@ -10,10 +10,6 @@ import kotlinx.serialization.Serializable
 // in users' cloud storage forever and are never force-migrated.
 const val CURRENT_BACKUP_FORMAT_VERSION = 1
 
-class UnsupportedBackupVersionException(val fileVersion: Int) : Exception(
-    "Backup file is format version $fileVersion, but this app only understands up to $CURRENT_BACKUP_FORMAT_VERSION"
-)
-
 @Serializable
 data class ItemExport(
     // Absent on a version-0 file (written before uid existed) - the importer mints a fresh one
@@ -45,6 +41,20 @@ data class BackupExport(
     val exportedAt: Long,
     val lists: List<ListExport>
 )
+
+// Outcome of validating a user-picked file before any database write (R4.3/R4.4). Rejected
+// carries a specific, user-facing reason - "which check failed" - rather than a raw exception.
+sealed interface RestorePreflight {
+    data class Ready(
+        val export: BackupExport,
+        val fileListCount: Int,
+        val fileItemCount: Int,
+        val currentListCount: Int,
+        val currentItemCount: Int
+    ) : RestorePreflight
+
+    data class Rejected(val reason: String) : RestorePreflight
+}
 
 fun ListWithItems.toExport(): ListExport = ListExport(
     uid = list.uid,

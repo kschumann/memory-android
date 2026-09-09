@@ -1,12 +1,14 @@
 package com.example.memory.data
 
+import androidx.room.withTransaction
 import com.example.memory.backup.BackupExport
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 
 class MemoryRepository(
     private val listDao: ListDao,
-    private val itemDao: ItemDao
+    private val itemDao: ItemDao,
+    private val database: MemoryDatabase
 ) {
     fun observeLists(): Flow<List<ListEntity>> = listDao.observeLists()
 
@@ -77,35 +79,42 @@ class MemoryRepository(
         itemDao.update(item.copy(archived = false))
     }
 
-    // Inserts every list/item from a decoded backup file as new rows. Each row's own uid is
-    // preserved from the file untouched (falling back to a fresh one only for a version-0 file
-    // that never had uid); Room assigns fresh local `id`s regardless, since `id` was never part
-    // of the file format and a restored item's listId is wired to whatever `id` its parent list
-    // just got. Callers decide when this is appropriate to call (e.g. into an empty database) -
-    // this does not clear or merge with any existing data.
-    suspend fun importBackup(export: BackupExport) {
-        for (listExport in export.lists) {
-            val listId = listDao.insert(
-                ListEntity(
-                    name = listExport.name,
-                    sortOrder = listExport.sortOrder,
-                    createdAt = listExport.createdAt,
-                    uid = listExport.uid ?: UUID.randomUUID().toString()
-                )
-            )
-            for (itemExport in listExport.items) {
-                itemDao.insert(
-                    ItemEntity(
-                        listId = listId,
-                        text = itemExport.text,
-                        sortOrder = itemExport.sortOrder,
-                        globalSortOrder = itemExport.globalSortOrder,
-                        createdAt = itemExport.createdAt,
-                        archived = itemExport.archived,
-                        archivedAt = itemExport.archivedAt,
-                        uid = itemExport.uid ?: UUID.randomUUID().toString()
+    // Wipes every list (cascading to every item) and reloads from a decoded backup file, all in
+    // one transaction - a failure partway through rolls back completely, never leaving a mix of
+    // old and new data (R4.7). This is REPLACE, not merge: existing rows are gone regardless of
+    // whether the file also describes them. Every field (sortOrder, globalSortOrder, createdAt,
+    // archived, archivedAt) is carried over verbatim, including sentinel values like a negative
+    // sortOrder - this layer doesn't interpret ordering, only preserves it (R4.8). Each row's own
+    // uid is preserved from the file untouched; a version-0 file (predates uid) gets a fresh one
+    // per row instead - the one deliberate exception to uid's usual immutability, safe here only
+    // because replace never matches rows against what it's replacing (R4.9/R4.10). Room assigns
+    // fresh local `id`s regardless, since `id` was never part of the file format.
+    suspend fun replaceAllWithBackup(export: BackupExport) {
+        database.withTransaction {
+            listDao.deleteAll()
+            for (listExport in export.lists) {
+                val listId = listDao.insert(
+                    ListEntity(
+                        name = listExport.name,
+                        sortOrder = listExport.sortOrder,
+                        createdAt = listExport.createdAt,
+                        uid = listExport.uid ?: UUID.randomUUID().toString()
                     )
                 )
+                for (itemExport in listExport.items) {
+                    itemDao.insert(
+                        ItemEntity(
+                            listId = listId,
+                            text = itemExport.text,
+                            sortOrder = itemExport.sortOrder,
+                            globalSortOrder = itemExport.globalSortOrder,
+                            createdAt = itemExport.createdAt,
+                            archived = itemExport.archived,
+                            archivedAt = itemExport.archivedAt,
+                            uid = itemExport.uid ?: UUID.randomUUID().toString()
+                        )
+                    )
+                }
             }
         }
     }

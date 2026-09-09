@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -65,18 +66,8 @@ class BackupManager(
 
     suspend fun exportNow(folderUri: Uri) = withContext(Dispatchers.IO) {
         try {
-            val treeDoc = DocumentFile.fromTreeUri(context, folderUri)
-            if (treeDoc == null || !treeDoc.exists() || !treeDoc.isDirectory || !treeDoc.canWrite()) {
-                error("Backup folder is missing or not writable")
-            }
-
-            val export = BackupExport(
-                formatVersion = CURRENT_BACKUP_FORMAT_VERSION,
-                appVersion = currentAppVersion(),
-                exportedAt = System.currentTimeMillis(),
-                lists = repository.getAllListsWithItems().map { it.toExport() }
-            )
-            val json = backupJson.encodeToString(export)
+            val treeDoc = requireWritableTree(folderUri)
+            val json = backupJson.encodeToString(buildCurrentExport())
 
             writeAtomically(treeDoc, json)
             writeRollingSnapshot(treeDoc, json)
@@ -87,14 +78,74 @@ class BackupManager(
         }
     }
 
-    // Decodes and imports a backup file's contents. Used today by the export/import round-trip
-    // test; a user-facing "restore from file" flow is a later step in this series.
-    suspend fun restoreFrom(json: String) = withContext(Dispatchers.IO) {
-        val export = backupJson.decodeFromString<BackupExport>(json)
-        if (export.formatVersion > CURRENT_BACKUP_FORMAT_VERSION) {
-            throw UnsupportedBackupVersionException(export.formatVersion)
+    // R4.2/R4.3/R4.4: read and fully validate an arbitrary user-picked file before anything is
+    // written anywhere. Any failure comes back as a specific, user-facing reason rather than a
+    // stack trace - "which check failed" per R4.4 - and nothing is touched on failure.
+    suspend fun validatePickedFile(uri: Uri): RestorePreflight = withContext(Dispatchers.IO) {
+        val text = try {
+            context.contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
+                ?: return@withContext RestorePreflight.Rejected("Could not open the selected file")
+        } catch (e: Exception) {
+            return@withContext RestorePreflight.Rejected("Could not read the selected file: ${e.message}")
         }
-        repository.importBackup(export)
+
+        val export = try {
+            backupJson.decodeFromString<BackupExport>(text)
+        } catch (e: SerializationException) {
+            return@withContext RestorePreflight.Rejected("This isn't a valid backup file (${e.message ?: "malformed JSON"})")
+        } catch (e: IllegalArgumentException) {
+            return@withContext RestorePreflight.Rejected("This isn't a valid backup file (${e.message ?: "malformed JSON"})")
+        }
+
+        if (export.formatVersion !in 0..CURRENT_BACKUP_FORMAT_VERSION) {
+            return@withContext RestorePreflight.Rejected(
+                "This backup was made with a newer version of the app (format ${export.formatVersion}, " +
+                    "this version supports up to $CURRENT_BACKUP_FORMAT_VERSION)"
+            )
+        }
+
+        val current = repository.getAllListsWithItems()
+        RestorePreflight.Ready(
+            export = export,
+            fileListCount = export.lists.size,
+            fileItemCount = export.lists.sumOf { it.items.size },
+            currentListCount = current.size,
+            currentItemCount = current.sumOf { it.items.size }
+        )
+    }
+
+    // R4.6/R4.7/R4.11: snapshot current state (the undo copy) before touching anything, replace
+    // in one transaction, then immediately re-export so the live file reflects the new state.
+    // Requires a configured, writable backup destination - restore's only safety net is that
+    // undo snapshot, so restore never proceeds without being able to write one.
+    suspend fun performRestore(export: BackupExport) = withContext(Dispatchers.IO) {
+        val folderUri = getSavedFolderUri() ?: error("No backup destination is configured")
+        val treeDoc = requireWritableTree(folderUri)
+
+        val undoJson = backupJson.encodeToString(buildCurrentExport())
+        val undoName = "memory-pre-restore-${System.currentTimeMillis()}.json"
+        val undoFile = treeDoc.createFile("application/json", undoName)
+            ?: error("Could not write the pre-restore safety snapshot")
+        writeAndSync(undoFile.uri, undoJson)
+
+        repository.replaceAllWithBackup(export)
+
+        exportNow(folderUri)
+    }
+
+    private suspend fun buildCurrentExport(): BackupExport = BackupExport(
+        formatVersion = CURRENT_BACKUP_FORMAT_VERSION,
+        appVersion = currentAppVersion(),
+        exportedAt = System.currentTimeMillis(),
+        lists = repository.getAllListsWithItems().map { it.toExport() }
+    )
+
+    private fun requireWritableTree(folderUri: Uri): DocumentFile {
+        val treeDoc = DocumentFile.fromTreeUri(context, folderUri)
+        if (treeDoc == null || !treeDoc.exists() || !treeDoc.isDirectory || !treeDoc.canWrite()) {
+            error("Backup folder is missing or not writable")
+        }
+        return treeDoc
     }
 
     private fun setHealth(health: BackupHealth) {

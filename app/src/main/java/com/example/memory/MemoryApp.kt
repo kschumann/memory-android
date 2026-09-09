@@ -38,7 +38,7 @@ class MemoryApp : Application() {
         val database = Room.databaseBuilder(this, MemoryDatabase::class.java, "memory.db")
             .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .build()
-        repository = MemoryRepository(database.listDao(), database.itemDao())
+        repository = MemoryRepository(database.listDao(), database.itemDao(), database)
         backupManager = BackupManager(this, repository)
 
         repository.observeAllListsWithItems()
