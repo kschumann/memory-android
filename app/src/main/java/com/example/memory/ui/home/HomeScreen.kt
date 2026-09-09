@@ -150,10 +150,10 @@ fun HomeScreen(onOpenList: (Long) -> Unit) {
         topBar = {
             ScreenTopBar {
                 TopAppBar(
-                    expandedHeight = 112.dp,
+                    expandedHeight = 128.dp,
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            AppIcon(size = 96.dp)
+                            AppIcon(size = 120.dp)
                             Spacer(modifier = Modifier.width(12.dp))
                             Text("My Memory")
                         }

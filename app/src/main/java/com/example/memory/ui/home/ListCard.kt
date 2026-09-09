@@ -53,7 +53,7 @@ fun ListCard(
         // Rounder than the default (and than the note/item cards below it) and shorter, so a
         // list card reads as a visually distinct, higher-level thing from the note cards nested
         // inside a list.
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
@@ -94,7 +94,7 @@ fun ListCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .combinedClickable(onClick = onOpen, onLongClick = onStartRename)
-                    .padding(start = 4.dp, top = 8.dp, bottom = 8.dp, end = 16.dp),
+                    .padding(start = 4.dp, top = 4.dp, bottom = 4.dp, end = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(

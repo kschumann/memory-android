@@ -15,8 +15,8 @@ android {
         applicationId = "com.example.memory"
         minSdk = 24
         targetSdk = 37
-        versionCode = 7
-        versionName = "0.6.0"
+        versionCode = 9
+        versionName = "0.6.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
