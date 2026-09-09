@@ -26,8 +26,14 @@ private const val KEY_FOLDER_URI = "folder_uri"
 private const val KEY_UNHEALTHY = "backup_unhealthy"
 private const val BACKUP_FILE_NAME = "memory-backup.json"
 private const val TEMP_FILE_NAME = "memory-backup.json.tmp"
-private const val SNAPSHOT_RETENTION_DAYS = 14
+// Karl only wants disk-space-you-can-see, not a deep history: one dated snapshot and one
+// pre-restore snapshot is enough headroom for him, not the fuller 7-14 day window R2.7 originally
+// suggested. Trade-off: this shortens how far back a same-day-unnoticed disaster can be recovered
+// from - see writeRollingSnapshot below.
+private const val SNAPSHOT_RETENTION_DAYS = 1
+private const val PRE_RESTORE_RETENTION_COUNT = 1
 private val SNAPSHOT_NAME_PATTERN = Regex("""^memory-(\d{4}-\d{2}-\d{2})\.json$""")
+private val PRE_RESTORE_NAME_PATTERN = Regex("""^memory-pre-restore-(\d+)\.json$""")
 
 // ignoreUnknownKeys: a file written by a newer app version may carry fields this build doesn't
 // know about yet (R3.3) - they're dropped on read rather than failing the whole import.
@@ -127,6 +133,7 @@ class BackupManager(
         val undoFile = treeDoc.createFile("application/json", undoName)
             ?: error("Could not write the pre-restore safety snapshot")
         writeAndSync(undoFile.uri, undoJson)
+        pruneOldPreRestoreSnapshots(treeDoc)
 
         repository.replaceAllWithBackup(export)
 
@@ -188,8 +195,11 @@ class BackupManager(
     // The always-current file mirrors data loss (e.g. a mis-tapped cascading list delete) within
     // milliseconds, so it isn't disaster recovery by itself. One dated snapshot per calendar day,
     // written only the first time that date is seen (never overwritten again the same day) so a
-    // same-day disaster can't also wipe out today's recovery point; snapshots older than the
-    // retention window are pruned (R2.7).
+    // same-day disaster can't also wipe out that day's recovery point; snapshots beyond the
+    // retention window are pruned (R2.7). With SNAPSHOT_RETENTION_DAYS = 1, that recovery point
+    // only reaches back to the most recent previous day - a same-day-unnoticed disaster is not
+    // recoverable this way. Karl's deliberate call: he wants the footprint minimal, not the fuller
+    // multi-day window R2.7 originally described.
     private fun writeRollingSnapshot(treeDoc: DocumentFile, content: String) {
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         val snapshotName = "memory-$today.json"
@@ -207,5 +217,17 @@ class BackupManager(
             }
             .sortedByDescending { (date, _) -> date }
         byDateDescending.drop(SNAPSHOT_RETENTION_DAYS).forEach { (_, file) -> file.delete() }
+    }
+
+    // Keeps only the most recent pre-restore safety snapshot; a restore is a rare, deliberate
+    // action, not something that needs its own history the way daily snapshots do.
+    private fun pruneOldPreRestoreSnapshots(treeDoc: DocumentFile) {
+        val byEpochDescending = treeDoc.listFiles()
+            .mapNotNull { file ->
+                val match = file.name?.let { PRE_RESTORE_NAME_PATTERN.matchEntire(it) } ?: return@mapNotNull null
+                match.groupValues[1].toLongOrNull()?.let { it to file }
+            }
+            .sortedByDescending { (epochMs, _) -> epochMs }
+        byEpochDescending.drop(PRE_RESTORE_RETENTION_COUNT).forEach { (_, file) -> file.delete() }
     }
 }
