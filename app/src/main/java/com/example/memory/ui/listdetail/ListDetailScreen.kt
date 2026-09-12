@@ -104,7 +104,7 @@ fun ListDetailScreen(listId: Long, onBack: () -> Unit) {
                 expandedHeight = 128.dp,
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                    AppIcon(size = 120.dp)
+                    AppIcon(size = 60.dp)
                     Spacer(modifier = Modifier.width(12.dp))
                     val currentList = list
                     if (currentList == null) {
