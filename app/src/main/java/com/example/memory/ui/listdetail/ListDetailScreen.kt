@@ -101,7 +101,7 @@ fun ListDetailScreen(listId: Long, onBack: () -> Unit) {
         topBar = {
           ScreenTopBar {
             CenterAlignedTopAppBar(
-                expandedHeight = 128.dp,
+                expandedHeight = 68.dp,
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                     AppIcon(size = 60.dp)
