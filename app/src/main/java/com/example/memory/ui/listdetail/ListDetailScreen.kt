@@ -101,10 +101,10 @@ fun ListDetailScreen(listId: Long, onBack: () -> Unit) {
         topBar = {
           ScreenTopBar {
             CenterAlignedTopAppBar(
-                expandedHeight = 128.dp,
+                expandedHeight = 68.dp,
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                    AppIcon(size = 120.dp)
+                    AppIcon(size = 60.dp)
                     Spacer(modifier = Modifier.width(12.dp))
                     val currentList = list
                     if (currentList == null) {

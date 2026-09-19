@@ -8,6 +8,8 @@
 ## Commands
 - Build:            ./gradlew assembleDebug
 - Unit tests:       ./gradlew testDebugUnitTest
+- Release build: ./gradlew assembleRelease
+- Publish APK: publish-apk <versionName> (copies the signed APK to ~/apk-out, writes the checksum). ~/apk-out is an expected output directory outside the repo.
 - Instrumented:     ./gradlew connectedDebugAndroidTest   (needs a booted emulator or attached device)
 
 ## Booting the emulator (do this yourself before instrumented tests)
@@ -20,7 +22,7 @@
 - Work on a branch named feature/<short-name>. Never work directly on main.
 - Definition of done: assembleDebug, testDebugUnitTest and connectedDebugAndroidTest all pass.
 - Commit when green, with a message explaining the why. Push only after Karl provides explicit instructions to do so.
-- Never read, write, or reference the signing keystore or ~/.gradle/gradle.properties.
+- Never cat, grep, edit, or print the contents of ~/keys/** or ~/.gradle/gradle.properties, and never echo a keystore password. Gradle reading those files during a release build is expected and is not a violation of this rule.
 - Never commit keystore files, gradle.properties, or anything under keys/.
 
 ## Stop and ask before
@@ -28,11 +30,11 @@
   one unrecoverable failure). Propose the migration explicitly.
 - Adding any third-party dependency.
 - Changing the navigation structure or the shape of the data model.
-- Anything touching signingConfigs, versionCode, or the release build type.
 - Any point where two reasonable designs exist and the choice constrains future features.
 
 ## Do not ask about
 Formatting, naming, refactors internal to a file, test structure, or anything the tests can settle.
+Any edit to the signingConfigs block, the release build type, or versionCode/versionName in app/build.gradle.kts. Running ./gradlew assembleRelease is routine and expected — build it whenever asked, no need to check first.
 
 ## Target device reality
 The install target is a Pixel 6a (test) and a Pixel 10a (daily) running GrapheneOS: NO Google Play

@@ -18,6 +18,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        (application as MemoryApp).purgeExpiredArchivedItems()
+    }
+
     // Force a write on backgrounding so a pending debounced auto-backup isn't lost if the
     // process is killed while backgrounded (R2.6) - this is the app's only Activity, so this
     // is equivalent to a process-lifecycle observer without adding one.
