@@ -53,6 +53,17 @@ class MemoryApp : Application() {
         applicationScope.launch { autoBackup() }
     }
 
+    // Called from MainActivity.onStart, which runs on both cold start and return to the foreground.
+    fun purgeExpiredArchivedItems() {
+        applicationScope.launch {
+            try {
+                repository.purgeExpiredArchivedItems()
+            } catch (e: Exception) {
+                Log.w("MemoryApp", "Archive purge failed", e)
+            }
+        }
+    }
+
     private suspend fun autoBackup() {
         val folderUri = backupManager.getSavedFolderUri() ?: return
         try {

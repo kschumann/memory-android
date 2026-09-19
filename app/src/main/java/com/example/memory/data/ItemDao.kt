@@ -43,4 +43,9 @@ interface ItemDao {
 
     @Delete
     suspend fun delete(item: ItemEntity): Unit
+
+    // Rows with archived = 1 but a null archivedAt never match (NULL < x is not true), so they are
+    // kept rather than guessed at.
+    @Query("DELETE FROM items WHERE archived = 1 AND archivedAt < :cutoff")
+    suspend fun deleteArchivedBefore(cutoff: Long): Int
 }

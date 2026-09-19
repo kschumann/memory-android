@@ -5,6 +5,8 @@ import com.example.memory.backup.BackupExport
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 
+const val ARCHIVE_RETENTION_MS = 3L * 24 * 60 * 60 * 1000
+
 class MemoryRepository(
     private val listDao: ListDao,
     private val itemDao: ItemDao,
@@ -74,6 +76,11 @@ class MemoryRepository(
     suspend fun archiveItem(item: ItemEntity) {
         itemDao.update(item.copy(archived = true, archivedAt = System.currentTimeMillis()))
     }
+
+    // Permanently deletes items archived more than ARCHIVE_RETENTION_MS ago - no confirmation, by
+    // design. Restoring an item clears `archived`, so a restored item is never matched here.
+    suspend fun purgeExpiredArchivedItems(now: Long = System.currentTimeMillis()): Int =
+        itemDao.deleteArchivedBefore(now - ARCHIVE_RETENTION_MS)
 
     suspend fun restoreItem(item: ItemEntity) {
         itemDao.update(item.copy(archived = false))
